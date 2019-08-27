@@ -3,7 +3,7 @@
 #Author:	Brandon White
 #Date:		08/26/2019
 #Desc:		This set of functions to solve the problems
-#			given on HW1 of MAE 5010. 
+#			given on HW1 of MAE 5010.
 #**************************************************
 
 def Euler3212EP(angles, radians = False, rounding = True):
@@ -105,7 +105,7 @@ def derivatives(state, FM, MAV):
 	[Ixz, Ix, Iy, Iz] = MAV.I
 
 	#Add gravity if not included
-if MAV.gravity_needed:
+	if MAV.gravity_needed:
 		Fz = Fz - 32.2*MAV.m
 
 	#Get angle measures
@@ -125,3 +125,5 @@ if MAV.gravity_needed:
 			xdot.append(dot)
 
 	return xdot
+
+def integrator(tf = 10, delta_t = .25):
