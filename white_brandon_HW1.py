@@ -94,19 +94,19 @@ def rot_dyn(Gamma):
 def derivatives(state, FM, MAV):
 	#state:	[p_n, p_e, p_d, u, v, w, e0, e1, e2, e3, p, q, r]
 	#FM:	[Fx, Fy, Fz, Ell, M, N]
-	#MAV:	MAV.I, MAV.m, MAV.gravity_needed
+	#MAV:	MAV.inertnert, MAV.m, MAV.gravity_needed
 
 	from math import sin, cos
 	import EP2Euler321
 
-	#Unpack state, FM, MAV.I
+	#Unpack state, FM, MAV
 	[p_n, p_e, p_d, u, v, w, e0, e1, e2, e3, p, q, r] = state
 	[Fx, Fy, Fz, L, M, N] = FM
-	[Ixz, Ix, Iy, Iz] = MAV.I
+	[Ixz, Ix, Iy, Iz] = MAV.inert
 
 	#Add gravity if not included
 	if MAV.gravity_needed:
-		Fz = Fz - 32.2*MAV.m
+		Fz = Fz - 32.2*MAV.mass
 
 	#Get angle measures
 	angles = EP2Euler321([e0, e1, e2, e3])
@@ -117,7 +117,7 @@ def derivatives(state, FM, MAV):
 	d_dt[0] = pos_kin(psi, theta, phi)
 	d_dt[1] = pos_dyn(u,v,w)
 	d_dt[2] = rot_kin(e0, e1, e2, e3)
-	d_dt[3] = rot_dyn(make_gamma(MAV.I))
+	d_dt[3] = rot_dyn(make_gamma(MAV.inert))
 
 	#Build One Vector of Xdot
 	for eqn_set in d_dt:
