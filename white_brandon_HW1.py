@@ -127,3 +127,4 @@ def derivatives(state, FM, MAV):
 	return xdot
 
 def integrator(tf = 10, delta_t = .25):
+	return 0
