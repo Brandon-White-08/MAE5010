@@ -42,11 +42,11 @@ class App(QMainWindow):
 		self.graphs.append(PlotCanvas(self, width=5, height=5,
 			name_here = "position", given_data = self.data[:,0:3], t=self.t))
 		self.graphs.append(PlotCanvas(self, width=5, height=1.6,
-			name_here = "u", given_data = self.data[:, 4], t=self.t))
+			name_here = "u", given_data = self.data[:, 3], t=self.t))
 		self.graphs.append(PlotCanvas(self, width=5, height=1.6,
-			name_here = "v", given_data = self.data[:, 5], t=self.t))
+			name_here = "v", given_data = self.data[:, 4], t=self.t))
 		self.graphs.append(PlotCanvas(self, width=5, height=1.6,
-			name_here = "w", given_data = self.data[:, 6], t=self.t))
+			name_here = "w", given_data = self.data[:, 5], t=self.t))
 		self.graphs.append(PlotCanvas(self, width=3.3, height=1.8,
 			name_here =  "p", given_data = self.data[:, 10], t=self.t))
 		self.graphs.append(PlotCanvas(self, width=3.3, height=1.8,
@@ -91,14 +91,11 @@ class PlotCanvas(FigureCanvas):
 
 	def plot(self):
 		try:
-			print(len(self.data))
-			print(self.data)
-			if len(self.data[0]) > 1:
+			if len([self.data[0]]) > 1:
 				from mpl_toolkits import mplot3d
 				import matplotlib.pyplot as plt
-				ax = self.figure.add_subplot(111)
+				ax = self.figure.add_subplot(1,1,1, projection="3d")
 				ax.cla()
-				ax = plt.axes(projection="3d")
 				ax.plot3D(self.data[:, 0], self.data[:, 1], self.data[:, 2], linestyle='-', marker='.')
 				ax.set_title(self.nombre)
 				self.draw()
