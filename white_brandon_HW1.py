@@ -1,7 +1,7 @@
 #					TITLE BLOCK
 #**************************************************
 #Author:	Brandon White
-#Date:		08/26/2019
+#Date:		08/28/2019
 #Desc:		This set of functions to solve the problems
 #			given on HW1 of MAE 5010.
 #**************************************************
@@ -149,4 +149,4 @@ def integrator(MAV, tf = 10, delta_t = 0.1, graphing = False):
 		ax.plot3D(outputs[:,0], outputs[:,1], outputs[:,2], linestyle='-', marker='.')
 		plt.show()
 
-	return outputs
+	return [t, outputs]
