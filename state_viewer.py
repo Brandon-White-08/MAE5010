@@ -90,14 +90,12 @@ class PlotCanvas(FigureCanvas):
 
 	def plot(self):
 		try:
-			if len([self.data[0]]) > 1:
+			if self.nombre == "position":
 				import matplotlib.pyplot as plt
-				ax = self.figure.add_subplot(111)
+				from mpl_toolkits.mplot3d import Axes3D
+				ax = self.figure.add_subplot(111, projection = '3d')
 				ax.cla()
-				ax.plot(self.t, self.data[:, 2], 'r')
-				ax.plot(self.t, self.data[:, 2], 'b')
-				ax.plot(self.t, self.data[:, 2], 'g')
-				ax.legend(['P_n', 'P_e', 'P_h'])
+				ax.plot3D(self.data[:, 0], self.data[:, 1], self.data[:, 2])
 				ax.set_title(self.nombre)
 				self.draw()
 			else:
