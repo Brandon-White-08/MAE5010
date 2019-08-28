@@ -64,7 +64,6 @@ class App(QMainWindow):
 		self.graphs[6].move(690,510)
 
 		for graph in self.graphs:
-			print("Attempting to plot...")
 			graph.plot()
 
 		self.show()
@@ -92,16 +91,17 @@ class PlotCanvas(FigureCanvas):
 	def plot(self):
 		try:
 			if len([self.data[0]]) > 1:
-				from mpl_toolkits import mplot3d
 				import matplotlib.pyplot as plt
-				ax = self.figure.add_subplot(1,1,1, projection="3d")
+				ax = self.figure.add_subplot(111)
 				ax.cla()
-				ax.plot3D(self.data[:, 0], self.data[:, 1], self.data[:, 2], linestyle='-', marker='.')
+				ax.plot(self.t, self.data[:, 2], 'r')
+				ax.plot(self.t, self.data[:, 2], 'b')
+				ax.plot(self.t, self.data[:, 2], 'g')
+				ax.legend(['P_n', 'P_e', 'P_h'])
 				ax.set_title(self.nombre)
 				self.draw()
 			else:
 				ax = self.figure.add_subplot(111)
-				ax.cla()
 				ax.plot(self.t,self.data, 'r')
 				ax.set_title(self.nombre)
 				self.draw()
