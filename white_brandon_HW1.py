@@ -129,7 +129,7 @@ def derivatives(state, t, FM, MAV):
 
 	return xdot
 
-def integrator(MAV, tf = 10, delta_t = .25):
+def integrator(MAV, tf = 10, delta_t = 0.1, graphing = False):
 	from numpy import linspace
 	from scipy.integrate import odeint
 
@@ -137,6 +137,16 @@ def integrator(MAV, tf = 10, delta_t = .25):
 	descrete_pts = (tf/delta_t) // 1  # force integer
 	t = linspace(0, tf, descrete_pts + 1)
 
+	#Integration Step
 	outputs = odeint(derivatives, MAV.state0, t, args = (MAV.FM, MAV))
+
+	#Optional 3D Path Graphing
+	if graphing:
+		from mpl_toolkits import mplot3d
+		import matplotlib.pyplot as plt
+		fig = plt.figure()
+		ax = plt.axes(projection="3d")
+		ax.plot3D(outputs[:,0], outputs[:,1], outputs[:,2], linestyle='-', marker='.')
+		plt.show()
 
 	return outputs

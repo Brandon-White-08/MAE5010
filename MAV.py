@@ -20,7 +20,7 @@ class MAV:
             #Level flight at 500 ft at 50 ft/s
        #FM = [Fx, Fy, Fz, Ell, M, N]
        self.FM = [0, 0, self.mass*32.2, 0, 0, 0]
-            #Gravity only in base model
+            #Gravity ONLY in base model
 
        if aircraft != "None":
            try:
@@ -30,7 +30,10 @@ class MAV:
                print("No preconfig by given name: " + aircraft.lower())
 
     def update_mass(self, new_mass):
+        #NOTE: Automatically updates gravity force in FM
+        self.FM[2] -= self.mass * 32.2
         self.mass = new_mass
+        self.FM[2] += self.mass * 32.2
 
     def update_inert(self, new_inert):
         self.inert = new_inert
