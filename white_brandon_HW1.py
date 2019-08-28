@@ -42,7 +42,7 @@ def EP2Euler321(e, rounding = True):
 		if rounding:
 			angles[i] = round(angles[i],2)
 
-	return angles #returns degrees
+	return [angles[2], angles[1], angles[0]] #returns degrees
 
 def make_gamma(I):
 	[Ixz, Ix, Iy, Iz] = I
