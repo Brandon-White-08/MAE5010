@@ -9,14 +9,18 @@
 #Calling the class with an aircraft name below creates an MAV object
 class MAV:
     def __init__(self, aircraft = "None"):
-       #All masses listed in English units as denoted
+       #All units listed in English units as denoted
        self.name = aircraft
-       self.mass = 100  # Mass (lbf)
-       self.inert = [10, 10, 10, 10]  # Moment of Inertia (lbf*ft^2)
+       self.mass = 10  # Mass (lbf)
+       #Inert = [Ixz, Ix, Iy, Iz]
+       self.inert = [20, 10, 10, 10]  # Moment of Inertia (lbf*ft^2)
        self.gravity_needed = False
        #State = [p_n, p_e, p_d, u, v, w, e0, e1, e2, e3, p, q, r]
        self.state0 = [0, 0, -500, 50, 0, 0, 1, 0, 0, 0, 0, 0, 0]
             #Level flight at 500 ft at 50 ft/s
+       #FM = [Fx, Fy, Fz, Ell, M, N]
+       self.FM = [0, 0, self.mass*32.2, 0, 0, 0]
+            #Gravity only in base model
 
        if aircraft != "None":
            try:
@@ -37,13 +41,6 @@ class MAV:
                     values to quaternions...")
         else:
             self.state0 = new_state
-
-    def toggle_gravity(self):
-        if self.gravity_needed:
-            self.gravity_needed = False
-        else:
-            MAV.gravity_needed = True
-        print("Gravity Needed toggled to: " + str(MAV.gravity_needed))
 
     #Add templated aircraft below this line to pregenerate aircraft
     def temp(self):
