@@ -24,7 +24,7 @@ class App(QMainWindow):
 		super().__init__()
 
 		#Set form size (NOTE: graphs are [Pixels Width, Pixels Length] / 100)
-		self.width = 1030 #40 for gaps
+		self.width = 1540 #40 for gaps
 		self.height = 700 #50 for gapsS
 
 		#GUI Position and Size
@@ -53,6 +53,14 @@ class App(QMainWindow):
 			name_here = "q", given_data = self.data[:, 11], t=self.t))
 		self.graphs.append(PlotCanvas(self, width=3.3, height=1.8,
 			name_here = "r", given_data = self.data[:, 12], t=self.t))
+		self.graphs.append(PlotCanvas(self, width=5, height=1.6,
+			name_here = "q0", given_data = self.data[:, 6], t=self.t))
+		self.graphs.append(PlotCanvas(self, width=5, height=1.6,
+			name_here = "q1", given_data = self.data[:, 7], t=self.t))
+		self.graphs.append(PlotCanvas(self, width=5, height=1.6,
+			name_here = "q2", given_data = self.data[:, 8], t=self.t))
+		self.graphs.append(PlotCanvas(self, width=5, height=1.8,
+			name_here = "q3", given_data = self.data[:, 9], t=self.t))
 
 		#Position Graphs
 		self.graphs[0].move(10,0)
@@ -62,6 +70,10 @@ class App(QMainWindow):
 		self.graphs[4].move(10,510)
 		self.graphs[5].move(350,510)
 		self.graphs[6].move(690,510)
+		self.graphs[7].move(1030,0)
+		self.graphs[8].move(1030,170)
+		self.graphs[9].move(1030,340)
+		self.graphs[10].move(1030,510)
 
 		for graph in self.graphs:
 			graph.plot()
