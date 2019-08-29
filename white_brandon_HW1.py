@@ -124,7 +124,7 @@ def derivatives(state, t, MAV):
 	for eqn_set in d_dt:
 		for dot in eqn_set:
 			xdot.append(dot)
-	print(xdot)
+
 	return xdot
 
 def integrator(MAV, tf = 1, delta_t = 0.1, graphing = False):
