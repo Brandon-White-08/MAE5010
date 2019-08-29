@@ -97,6 +97,7 @@ class PlotCanvas(FigureCanvas):
 				ax.cla()
 				ax.plot3D(self.data[:, 0], self.data[:, 1], self.data[:, 2])
 				ax.set_title(self.nombre)
+				ax.invert_zaxis()
 				self.draw()
 			else:
 				ax = self.figure.add_subplot(111)

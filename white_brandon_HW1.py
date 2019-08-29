@@ -95,25 +95,23 @@ def rot_dyn(Gamma, p, q, r, L, M, N, Iy):
 			Gamma[7]*p*q - Gamma[1]*q*r + Gamma[4]*L + Gamma[8]*N]
 	return x_dot
 
-def derivatives(state, t, FM, MAV):
+def derivatives(state, t, MAV):
 	#state:	[p_n, p_e, p_d, u, v, w, e0, e1, e2, e3, p, q, r]
 	#FM:	[Fx, Fy, Fz, Ell, M, N]
 	#MAV:	MAV.inert, MAV.m, MAV.gravity_needed
 
-	#[FM, MAV] = parameters
-
 	from math import sin, cos
-	#import EP2Euler321
 
 	#Unpack state, FM, MAV
 	[p_n, p_e, p_d, u, v, w, e0, e1, e2, e3, p, q, r] = state
-	[Fx, Fy, Fz, L, M, N] = FM
+	#[Fx, Fy, Fz, L, M, N] = MAV.update_FM(t)
+	[Fx, Fy, Fz, L, M, N] = MAV.FM
 	[Ixz, Ix, Iy, Iz] = MAV.inert
 
 	#Get angle measures
 	angles = EP2Euler321([e0, e1, e2, e3])
 	[psi, theta, phi] = angles
-
+	print([Fx, Fy, Fz])
 	#Get Xdot Terms
 	d_dt = [[], [], [], []]
 	d_dt[0] = pos_kin(psi, theta, phi, u, v, w)
@@ -126,7 +124,7 @@ def derivatives(state, t, FM, MAV):
 	for eqn_set in d_dt:
 		for dot in eqn_set:
 			xdot.append(dot)
-
+	print(xdot)
 	return xdot
 
 def integrator(MAV, tf = 10, delta_t = 0.1, graphing = False):
@@ -138,7 +136,7 @@ def integrator(MAV, tf = 10, delta_t = 0.1, graphing = False):
 	t = linspace(0, tf, descrete_pts + 1)
 
 	#Integration Step
-	outputs = odeint(derivatives, MAV.state0, t, args = (MAV.FM, MAV))
+	outputs = odeint(derivatives, MAV.state0, t, args = (MAV,))
 
 	#Optional 3D Path Graphing
 	if graphing:
@@ -147,6 +145,10 @@ def integrator(MAV, tf = 10, delta_t = 0.1, graphing = False):
 		fig = plt.figure()
 		ax = plt.axes(projection="3d")
 		ax.plot3D(outputs[:,0], outputs[:,1], outputs[:,2], linestyle='-', marker='.')
+		ax.set_xlabel('P_n')
+		ax.set_ylabel('P_e')
+		ax.set_zlabel('P_z')
+		ax.invert_zaxis()
 		plt.show()
 
 	return [t, outputs]
