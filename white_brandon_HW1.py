@@ -104,14 +104,14 @@ def derivatives(state, t, MAV):
 
 	#Unpack state, FM, MAV
 	[p_n, p_e, p_d, u, v, w, e0, e1, e2, e3, p, q, r] = state
-	#[Fx, Fy, Fz, L, M, N] = MAV.update_FM(t)
+	storage = MAV.update_FM(t)
 	[Fx, Fy, Fz, L, M, N] = MAV.FM
 	[Ixz, Ix, Iy, Iz] = MAV.inert
 
 	#Get angle measures
 	angles = EP2Euler321([e0, e1, e2, e3])
 	[psi, theta, phi] = angles
-	print([Fx, Fy, Fz])
+
 	#Get Xdot Terms
 	d_dt = [[], [], [], []]
 	d_dt[0] = pos_kin(psi, theta, phi, u, v, w)
@@ -127,7 +127,7 @@ def derivatives(state, t, MAV):
 	print(xdot)
 	return xdot
 
-def integrator(MAV, tf = 10, delta_t = 0.1, graphing = False):
+def integrator(MAV, tf = 1, delta_t = 0.1, graphing = False):
 	from numpy import linspace
 	from scipy.integrate import odeint
 
