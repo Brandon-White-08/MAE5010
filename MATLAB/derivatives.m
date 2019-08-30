@@ -3,7 +3,7 @@
 %Name     :  Ujjval Patel
 %Due Date :  08/29/2019
 
-function xdot = derivatives (t,state, FM, MAV)
+function xdot = derivatives (t,state)
 %--------------------------------------------------------------------------
 % This function is used to convert Euler Angles to Quaternions.
 %
@@ -11,6 +11,7 @@ function xdot = derivatives (t,state, FM, MAV)
 % Arguments:
 %             state       (input)   [pn,pe,pd, u,v,w, e0,e1,e2,e3, p,q,r]
 %             FM          (input)   [Fx,Fy,Fz, L,M,N]    
+%             MAV         (input)   mav Parameters
 %
 %             xdot        (Output)  xdot = [pn_dot; pe_dot; pd_dot; u_dot; v_dot; w_dot;...
 %                                           e0_dot; e1_dot; e2_dot; e3_dot; p_dot; q_dot; r_dot];      
@@ -21,22 +22,20 @@ function xdot = derivatives (t,state, FM, MAV)
 pn = state(1); pe = state(2); pd = state(3); u = state(4); v = state(5);
 w = state(6); e0 = state(7); e1 = state(8); e2 = state(9); e3 = state(10);
 p = state(11); q = state(12); r = state(13);
+z = MAV();
 
-% m   = MAV.mass;
-% Ix  = MAV.Ix;
-% Iy  = MAV.Iy;
-% Iz  = MAV.Iz;
-% Ixz = MAV.Ixz;
-% g   = MAV.g;
-m = MAV(1); Ix = MAV(2); Iy = MAV(3); Iz = MAV(4); Ixz = MAV(5); g = MAV(6);
-
-Fx = FM(1); Fy = FM(2); L  = FM(4); M  = FM(5); N  = FM(6); Fz = m*g;
+m = z(1); Ix = z(2); Iy = z(3); Iz = z(4); Ixz = z(5); g = z(6);
 
 % Convert Quaternion to Euler321
 Angles = EP2Euler321([e0,e1,e2,e3]);
 psi = Angles(1);
 theta = Angles(2);
 phi = Angles(3);
+
+% Changing Frame for Gravitational Reference to Body frame
+F = FM(t);
+G = R_BF([psi;theta;phi])*[0;0;m*g];
+Fx = F(1)+ G(1); Fy = F(2)+G(2); L  = F(4); M  = F(5); N  = F(6); Fz = G(3)+F(3);
 
 % position kinematics
 P = [cosd(theta)*cosd(psi) sind(phi)*sind(theta)*cosd(psi)-cosd(phi)*...
