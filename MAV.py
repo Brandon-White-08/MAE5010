@@ -6,6 +6,8 @@
 #           of inertia, and gravity properties
 #**************************************************
 
+from rotations import *
+
 #Calling the class with an aircraft name below creates an MAV object
 class MAV:
     def __init__(self, aircraft = "None"):
@@ -19,8 +21,10 @@ class MAV:
        self.state0 = [0, 0, -500, 50, 0, 0, 1, 0, 0, 0, 0, 0, 0]
             #Level flight at 500 ft at 50 ft/s
        #FM = [Fx, Fy, Fz, Ell, M, N]
-       self.FM = [0, 0, self.mass*32.2, 0, 0, 0]
+       self.FM = [0, 0, 0, 0, 0, 0]
             #Gravity ONLY in base model
+       self.FMeq = [0, 0, (lambda t: 32.2*self.mass), 0, 0, 0]
+
 
        if aircraft != "None":
            try:
@@ -31,21 +35,49 @@ class MAV:
 
     def update_mass(self, new_mass):
         #NOTE: Automatically updates gravity force in FM
-        self.FM[2] -= self.mass * 32.2
         self.mass = new_mass
-        self.FM[2] += self.mass * 32.2
 
     def update_inert(self, new_inert):
         self.inert = new_inert
 
     def update_state0(self, new_state):
-        if len(new_state) != 12:
+        if len(new_state) != 13:
             print("Error - Not 13 items! \n You might need to convert angular\
                     values to quaternions...")
         else:
             self.state0 = new_state
 
+    def update_FM(self, t):
+        from math import sin, cos
+        from white_brandon_HW1 import EP2Euler321
+
+        #Angularize Gravity
+        angles = EP2Euler321(self.state0[6:10])
+        Fg = f2b(angles, [0, 0, 32.2*self.mass])
+
+        #All Other Forcing Functions
+        for i in range(6):
+            try:
+                self.FM[i] = self.FMeq[i](t)
+            except:
+                self.FM[i] = self.FMeq[i]
+
+        #Add in Gravity
+        self.FM[0] += Fg[0]
+        self.FM[1] += Fg[1]
+        self.FM[2] += Fg[2]
+
+        return self.FM
+
     #Add templated aircraft below this line to pregenerate aircraft
-    def temp(self):
-        self.update_mass(500)
-        self.update_inert([200, 50, 50, 50])
+    def hw1_1(self):
+        self.state0 = [100, 200, -500, 50, 0, 0,
+                        0.70643, 0.03084, 0.21263, 0.67438, 0, 0, 0]
+        self.FMeq = [0, 0, 0, 0, 0, 0]
+
+    def hw1_2(self):
+        from math import sin, cos
+        self.state0 = [100, 200, -500, 50, 0, 0,
+                        0.70643, 0.03084, 0.21263, 0.67438, 0, 0, 0]
+        self.FMeq = [(lambda t: sin(t)), 0, 0,
+                        0, 1e-4, 0]
