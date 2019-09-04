@@ -5,6 +5,14 @@
 #Desc:		Creates a visual representation of
 #			states vs time for sim data
 #**************************************************
+
+#Required imported modules:
+#	matplotlib (python -m pip install matplotlib)
+#	PyQt5 (python -m pip install pyqt5)
+#	numpy (python -m pip install numpy)
+#	sys (installed by default)
+#	time (installed by default)
+
 import sys
 
 from PyQt5 import QtCore, QtGui, QtWidgets
