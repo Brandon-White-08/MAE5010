@@ -49,7 +49,7 @@ class MAV:
 
     def update_FM(self, t):
         from math import sin, cos
-        from white_brandon_HW1 import EP2Euler321
+        from integrator import EP2Euler321
 
         #Angularize Gravity
         angles = EP2Euler321(self.state0[6:10])
