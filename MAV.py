@@ -24,7 +24,9 @@ class MAV:
        self.FM = [0, 0, 0, 0, 0, 0]
             #Gravity ONLY in base model
        self.FMeq = [0, 0, (lambda t: 32.2*self.mass), 0, 0, 0]
-
+       #Stability Derivatives/Coefficients
+        #Order:
+       self.coeff = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
        if aircraft != "None":
            try:
@@ -32,13 +34,6 @@ class MAV:
                method_to_call()
            except:
                print("No preconfig by given name: " + aircraft.lower())
-
-    def update_mass(self, new_mass):
-        #NOTE: Automatically updates gravity force in FM
-        self.mass = new_mass
-
-    def update_inert(self, new_inert):
-        self.inert = new_inert
 
     def update_state0(self, new_state):
         if len(new_state) != 13:
