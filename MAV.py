@@ -26,7 +26,12 @@ class MAV:
        self.FMeq = [0, 0, (lambda t: 32.2*self.mass), 0, 0, 0]
        #Stability Derivatives/Coefficients
         #Order:
-       self.coeff = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+       self.wingCoeff = [0, 0, 0, 0, 0, 0, 0, 0]
+       self.hstabCoeff = [0, 0, 0, 0, 0, 0, 0, 0]
+       self.vstabCoeff = [0, 0, 0, 0, 0, 0, 0, 0]
+       self.coeffeq = [0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0]
 
        if aircraft != "None":
            try:
@@ -76,3 +81,6 @@ class MAV:
                         0.70643, 0.03084, 0.21263, 0.67438, 0, 0, 0]
         self.FMeq = [(lambda t: sin(t)), 0, 0,
                         0, 1e-4, 0]
+
+    def hw2_737max(self):
+        
