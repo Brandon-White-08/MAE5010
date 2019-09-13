@@ -113,7 +113,7 @@ def rotational_dynamics(rot_vel, inertias, moments):
     Gamma = gamma_Matrix(inertias)
 
     rotdyn = [Gamma[1] * p * q - Gamma[2] * q * r + Gamma[3] * L + Gamma[4] * N,
-              Gamma[5] * p * r - Gamma[6] * (p ** 2 - r ** 2) + (1 / Iy) * M,
+              Gamma[5] * p * r - Gamma[6] * (p ** 2 - r ** 2) + (1 / inertias[1]) * M,
               Gamma[7] * p * q - Gamma[1] * q * r + Gamma[4] * L + Gamma[8] * N]
 
     return rotdyn
@@ -157,10 +157,10 @@ def force_calc(angles, force_input, mass):
     forces = [Fxg+fx, Fyg+fy, Fzg*mass+fz]
     return forces
 
-def derivatives(MAV, state, FM, t):
+def derivatives(state, t, MAV, FM):
     [pn, pe, pd, u, v, w, e0, e1, e2, e3, p, q, r] = state
     [fx, fy, fz, M, N, L] = FM
-    [Ix, Iy, Iz, Ixz, mass] = MAV.Inertias()
+    [Ix, Iy, Iz, Ixz, mass] = MAV.inertias()
     [phi, theta, psi] = EP2Euler321([e0, e1, e2, e3])
 
     time = t
@@ -184,7 +184,7 @@ def derivatives(MAV, state, FM, t):
 
     #store values in object
     MAV.store_velocities(tran_vel, rot_vel)
-    MAV.store_position(pn, pe, pd)
+    MAV.store_position([pn, pe, pd])
 
 
 
@@ -224,7 +224,7 @@ def integrator(FM, init_pos, init_vels, init_angles, MAV, tf, deltat, graphing =
 
     init_state = [pn, pe, pd, u, v, w, e0, e1, e2, e3, p, q, r]
 
-    func = odeint(derivatives, init_state, t, args=(MAV, init_state, FM, ))      #<<<<<<<<<<<<<<<<<<HELP
+    func = odeint(derivatives, init_state, t, args=(MAV, FM ))      #<<<<<<<<<<<<<<<<<<HELP
 
     if graphing:                                                                #<<<<<<<<<<<<<<<<<<HELP
         from mpl_toolkits import mplot3d
@@ -232,7 +232,7 @@ def integrator(FM, init_pos, init_vels, init_angles, MAV, tf, deltat, graphing =
 
         figure = plt.figure()
         XX = plt.axes(projection = "3d")
-        XX.mplot3D(func[:,0], func[:,1], func[:,2], linestyle = '--', marker = '.')
+        XX.plot3D(func[:,0], func[:,1], func[:,2], linestyle = '--', marker = '.')
         XX.set_xlabel('X axis')
         XX.set_ylabel('Y axis')
         XX.set_zlabel('Z axis')
