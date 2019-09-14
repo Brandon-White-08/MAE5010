@@ -77,10 +77,10 @@ class MAV:
         else:
             self.state0 = new_state
 
-    def CL_stall(self, alpha, model):
+    def CL_stall(self, alpha, model, coeff):
         from math import exp, sin, cos
         from numpy import sign
-        [discard, M, alpha_star, coeff] = model
+        [discard, M, alpha_star] = model
         del_alpha = alpha - alpha_star
         add_alpha = alpha + alpha_star
         sig = (1+exp(-M*del_alpha)+exp(M*add_alpha))/((1+exp(-M*del_alpha))*(1+exp(M*add_alpha)))
@@ -93,7 +93,7 @@ class MAV:
         from numpy import matmul, transpose
 
         [u, v, w] = self.state0[3:6]
-        V_t = (u**2 + v**2 + z**2)**(1/2)  #NOTE: No wind included
+        V_t = (u**2 + v**2 + w**2)**(1/2)  #NOTE: No wind included
         Q = 0.5 * V_t**2 *self.density()
 
         alpha = atan(-w/u)  #NOTE: Negative sign since Pd is inverted
@@ -108,19 +108,19 @@ class MAV:
         #Forces are [-D S -L] in wind frame
         coeff = self.wing[6]
         if wing_stall:
-            wing_w = [-Q*self.wing[0]*self.wing[1]*(coeff[4] + coeff[5]*alpha + coeff[6]*self.wing[6]/(2*V_t)*self.state0[11]),
+            wing_w = [-Q*self.wing[0]*self.wing[1]*(coeff[4] + coeff[5]*alpha + coeff[6]*self.wing[1]/(2*V_t)*self.state0[11]),
                     0,
-                    -Q*self.wing[0]*self.wing[1]*(CL_stall(alpha, self.wing[5], coeff[0:1]) + coeff[2]*self.wing[1]/(2*V_t)*self.state0[11])]
+                    -Q*self.wing[0]*self.wing[1]*(self.CL_stall(alpha, self.wing[5], coeff[0:2]) + coeff[2]*self.wing[1]/(2*V_t)*self.state0[11])]
         else:
-            wing_w = [-Q*self.wing[0]*self.wing[1]*(coeff[4] + coeff[5]*alpha + coeff[6]*self.wing[6]/(2*V_t)*self.state0[11]),
+            wing_w = [-Q*self.wing[0]*self.wing[1]*(coeff[4] + coeff[5]*alpha + coeff[6]*self.wing[1]/(2*V_t)*self.state0[11]),
                     0,
-                    -Q*self.wing[0]*self.wing[1]*(coeff[0] + coeff[1]*alpha + coeff[2]*self.wing[6]/(2*V_t)*self.state0[11])]
+                    -Q*self.wing[0]*self.wing[1]*(coeff[0] + coeff[1]*alpha + coeff[2]*self.wing[1]/(2*V_t)*self.state0[11])]
 
         coeff = self.hstab[6]
         if h_stall:
             hstab_w = [-Q*self.hstab[0]*self.hstab[1]*(coeff[4] + coeff[5]*alpha + coeff[7]*self.controls[0]),
                         0,
-                        -Q*self.hstab[0]*self.hstab[1]*(CL_stall(alpha, self.hstab[5], coeff[0:1]) + coeff[3]*self.controls[0])]
+                        -Q*self.hstab[0]*self.hstab[1]*(self.CL_stall(alpha, self.hstab[5], coeff[0:2]) + coeff[3]*self.controls[0])]
         else:
             hstab_w = [-Q*self.hstab[0]*self.hstab[1]*(coeff[4] + coeff[5]*alpha + coeff[7]*self.controls[0]),
                         0,
@@ -129,7 +129,7 @@ class MAV:
         coeff = self.vstab[6]
         if v_stall:
             vstab_w = [-Q*self.vstab[0]*self.vstab[1]*(coeff[5] * beta + coeff[9]*self.controls[3]),
-                        Q*self.vstab[0]*self.vstab[1]*(CL_stall(beta, self.vstab[5], coeff[0:1]) + coeff[3]*self.controls[3]),
+                        Q*self.vstab[0]*self.vstab[1]*(self.CL_stall(beta, self.vstab[5], coeff[0:2]) + coeff[3]*self.controls[3]),
                         0]
         else:
             vstab_w = [-Q*self.vstab[0]*self.vstab[1]*(coeff[4] + coeff[5]*beta + coeff[7]*self.controls[3]),
@@ -137,34 +137,36 @@ class MAV:
                         0]
 
         #Forces in BODY frame
-        angles = EP2Euler321(self.state0[6:10])
         XYZ_w = list(map(sum, zip( list(map(sum, zip(wing_w, hstab_w))) , vstab_w)))
         [X, Y, Z] = w2b(angles, XYZ_w)
 
         #Condense moment inputs
         #ROLL
+        w_roll_w = [-Q*self.wing[0]*self.wing[1]*self.wing[3]*self.wing[6][7]*2*self.controls[2],
+                        0,
+                        -Q*self.wing[0]*self.wing[1]*self.wing[3]*self.wing[6][3]*2*self.controls[2]]
         w_roll_b = matmul([0, 0, self.wing[3]], w2b(angles, w_roll_w))
         #w_roll_b +=  Q*self.wing[0]*(self.wing[1]**2)*self.wing[6][8][0]*self.controls[2] #Roll moment of aileron
         v_roll_b = matmul([0, self.vstab[4], 0], w2b(angles, vstab_w))
         #v_roll_b +=  Q*self.vstab[0]*(self.vstab[1]**2)*self.vstab[6][8][0]*self.controls[3] #Roll moment of rudder
-        [L] = w_roll_b+v_roll_b
+        L = w_roll_b+v_roll_b
 
         #PITCH
         h_pitch_b = matmul([0, 0, self.hstab[2]], w2b(angles, hstab_w))
         #h_roll_b +=  Q*self.hstab[0]*(self.hstab[1]**2)*self.hstab[6][8][1]*self.controls[0] #Pitch moment of elevator
-        w_pitch_b = matmul([0, 0, self.wing[2]], w2b(angles, wstab_w))
-        [M] = h_pitch_b+w_pitch_b
+        w_pitch_b = matmul([0, 0, self.wing[2]], w2b(angles, wing_w))
+        M = h_pitch_b+w_pitch_b
 
         #YAW
         v_yaw_b = matmul([0, self.vstab[2], 0], w2b(angles, vstab_w))
         #w_roll_b =  Q*self.wing[0]*(self.wing[1]**2)*self.wing[6][8][2]*self.controls[2] #Pitch moment of aileron
-        [N] = v_yaw_b #+w_roll_b
+        N = v_yaw_b #+w_roll_b
 
         #DEBUG AREA
         print('AERO TERMS:')
         print([X, Y, Z, L, M, N])
         from time import sleep
-        sleep(5)
+        sleep(1)
         return [X, Y, Z, L, M, N]
 
     def update_FM(self, t):
@@ -175,7 +177,7 @@ class MAV:
         angles = EP2Euler321(self.state0[6:10])
         Fg = f2b(angles, [0, 0, 32.2*self.mass])
 
-        #All Other Forcing Functions
+        #All Forcing Functions
         for i in range(6):
             try:
                 self.FM[i] = self.FMeq[i](t)
@@ -186,6 +188,15 @@ class MAV:
         self.FM[0] += Fg[0] + self.thrust_max * self.controls[1] #Add in thrust
         self.FM[1] += Fg[1]
         self.FM[2] += Fg[2]
+
+        #Add in Aero Terms
+        aero_b = self.aero_terms()
+        self.FM[0] += aero_b[0]
+        self.FM[1] += aero_b[1]
+        self.FM[2] += aero_b[2]
+        self.FM[0] += aero_b[3]
+        self.FM[1] += aero_b[4]
+        self.FM[2] += aero_b[5]
 
         return self.FM
 
@@ -211,7 +222,6 @@ class MAV:
     def hw2(self):
         #All units listed in English units as denoted
         #NOTE: alpha and beta in radians
-        self.name = aircraft
         self.mass = 0.925  # Mass (slug)
         self.dynamic_density = False #True uses lapse rate for rho=f(h)
 
