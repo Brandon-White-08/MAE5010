@@ -78,12 +78,13 @@ class MAV:
             self.state0 = new_state
 
     def CL_stall(self, alpha, model):
-        from math import exp, sign, sin, cos
+        from math import exp, sin, cos
+        from numpy import sign
         [discard, M, alpha_star, coeff] = model
         del_alpha = alpha - alpha_star
         add_alpha = alpha + alpha_star
-        sig = (1+exp(-M*del_alpha)+exp(M*add_alpha))/((1+exp(-M*del_alpha))*(1+exp(M*add_alpha)
-        CL = (1-sig)*(coeff[0]+coeff[1]*alpha) + sig *2*sign(alpha)*sin(alpha)**2*cos(alpha)
+        sig = (1+exp(-M*del_alpha)+exp(M*add_alpha))/((1+exp(-M*del_alpha))*(1+exp(M*add_alpha)))
+        CL = (1-sig)*(coeff[0]+coeff[1]*alpha) + sig*2*sign(alpha)*(sin(alpha)**2)*cos(alpha)
         return CL
 
     def aero_terms(self):
@@ -106,7 +107,7 @@ class MAV:
 
         #Forces are [-D S -L] in wind frame
         coeff = self.wing[6]
-        if wing_stall
+        if wing_stall:
             wing_w = [-Q*self.wing[0]*self.wing[1]*(coeff[4] + coeff[5]*alpha + coeff[6]*self.wing[6]/(2*V_t)*self.state0[11]),
                     0,
                     -Q*self.wing[0]*self.wing[1]*(CL_stall(alpha, self.wing[5], coeff[0:1]) + coeff[2]*self.wing[1]/(2*V_t)*self.state0[11])]
@@ -162,6 +163,8 @@ class MAV:
         #DEBUG AREA
         print('AERO TERMS:')
         print([X, Y, Z, L, M, N])
+        from time import sleep
+        sleep(5)
         return [X, Y, Z, L, M, N]
 
     def update_FM(self, t):
