@@ -16,7 +16,7 @@ def make_Rbf(angles):
 
     return R_bf
 
-def make_Rbw():
+def make_Rbw(angles):
     from math import cos, sin, pi
     [alpha, beta] = angles
 
