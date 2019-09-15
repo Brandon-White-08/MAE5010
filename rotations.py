@@ -26,9 +26,9 @@ def make_Rbw(angles):
         alpha = alpha * (pi/180)
         beta = beta * (pi/180)
 
-    R_bw = [[cos(alpha)*cos(beta), 0, 0],
-            [sin(beta), 0, 0],
-            [sin(alpha)*cos(beta), 0, 0]]
+    R_bw = [[cos(alpha)*cos(beta), -sin(beta)*cos(alpha), -sin(alpha)],
+            [sin(beta), cos(beta), 0],
+            [sin(alpha)*cos(beta), -sin(beta)*sin(alpha), cos(alpha)]]
 
     return R_bw
 

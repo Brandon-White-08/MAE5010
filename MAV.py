@@ -14,6 +14,8 @@ class MAV:
        #All units listed in English units as denoted
        #NOTE: alpha and beta in radians
        self.name = aircraft
+       self.last_update = 0
+       self.delta_t = 10
        self.mass = 10  # Mass (slug)
        self.dynamic_density = False #True uses lapse rate for rho=f(h)
 
@@ -96,10 +98,12 @@ class MAV:
         V_t = (u**2 + v**2 + w**2)**(1/2)  #NOTE: No wind included
         Q = 0.5 * V_t**2 *self.density()
 
+        print("Q: " + str(Q))
+
         alpha = atan(-w/u)  #NOTE: Negative sign since Pd is inverted
         beta = atan(v/u)
         angles = [alpha, beta]
-
+        print('Angles: ' + str(angles))
         #Determine if stall model needed
         wing_stall = self.wing[5][0]
         h_stall = self.hstab[5][0]
@@ -115,6 +119,7 @@ class MAV:
             wing_w = [-Q*self.wing[0]*self.wing[1]*(coeff[4] + coeff[5]*alpha + coeff[6]*self.wing[1]/(2*V_t)*self.state0[11]),
                     0,
                     -Q*self.wing[0]*self.wing[1]*(coeff[0] + coeff[1]*alpha + coeff[2]*self.wing[1]/(2*V_t)*self.state0[11])]
+        print('Wing: ' + str(wing_w))
 
         coeff = self.hstab[6]
         if h_stall:
@@ -125,6 +130,7 @@ class MAV:
             hstab_w = [-Q*self.hstab[0]*self.hstab[1]*(coeff[4] + coeff[5]*alpha + coeff[7]*self.controls[0]),
                         0,
                         -Q*self.hstab[0]*self.hstab[1]*(coeff[0] + coeff[1]*alpha + coeff[3]*self.controls[0])]
+        print('hstab: ' + str(hstab_w))
 
         coeff = self.vstab[6]
         if v_stall:
@@ -135,11 +141,13 @@ class MAV:
             vstab_w = [-Q*self.vstab[0]*self.vstab[1]*(coeff[4] + coeff[5]*beta + coeff[7]*self.controls[3]),
                         Q*self.vstab[0]*self.vstab[1]*(coeff[0] + coeff[1]*beta + coeff[3]*self.controls[3]),
                         0]
+        print('vstab: ' + str(vstab_w))
 
         #Forces in BODY frame
         XYZ_w = list(map(sum, zip( list(map(sum, zip(wing_w, hstab_w))) , vstab_w)))
+        print('Total Forces: ' + str(XYZ_w))
         [X, Y, Z] = w2b(angles, XYZ_w)
-
+        print('Rotated Forces: ' + str([X, Y, Z]))
         #Condense moment inputs
         #ROLL
         w_roll_w = [-Q*self.wing[0]*self.wing[1]*self.wing[3]*self.wing[6][7]*2*self.controls[2],
@@ -163,10 +171,9 @@ class MAV:
         N = v_yaw_b #+w_roll_b
 
         #DEBUG AREA
-        print('AERO TERMS:')
-        print([X, Y, Z, L, M, N])
+        print('AERO TERMS:' + str([X, Y, Z, L, M, N]))
         from time import sleep
-        sleep(1)
+        #sleep(1)
         return [X, Y, Z, L, M, N]
 
     def update_FM(self, t):
@@ -176,28 +183,30 @@ class MAV:
         #Angularize Gravity
         angles = EP2Euler321(self.state0[6:10])
         Fg = f2b(angles, [0, 0, 32.2*self.mass])
-
+        print('Gravity: ' + str(Fg))
         #All Forcing Functions
         for i in range(6):
             try:
                 self.FM[i] = self.FMeq[i](t)
             except:
                 self.FM[i] = self.FMeq[i]
+        print("FM w/Forcing:" + str(self.FM))
 
         #Add in Gravity
         self.FM[0] += Fg[0] + self.thrust_max * self.controls[1] #Add in thrust
         self.FM[1] += Fg[1]
         self.FM[2] += Fg[2]
+        print("FM w/Gravity:" + str(self.FM))
 
         #Add in Aero Terms
         aero_b = self.aero_terms()
         self.FM[0] += aero_b[0]
         self.FM[1] += aero_b[1]
         self.FM[2] += aero_b[2]
-        self.FM[0] += aero_b[3]
-        self.FM[1] += aero_b[4]
-        self.FM[2] += aero_b[5]
-
+        self.FM[3] += aero_b[3]
+        self.FM[4] += aero_b[4]
+        self.FM[5] += aero_b[5]
+        print("TOTAL FM" + str(self.FM))
         return self.FM
 
     #===============================================================

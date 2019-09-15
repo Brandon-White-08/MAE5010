@@ -146,7 +146,7 @@ class PlotCanvas(FigureCanvas):
 				ax.set_title(self.nombre)
 				ax.set_xlabel('t (s)')
 				ax.set_ylabel('mag.')
-				ax.set_ylim(-1,1)
+				#ax.set_ylim(-1,1)
 				self.draw()
 		except:
 			print('PLOT METHOD ERROR')

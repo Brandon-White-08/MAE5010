@@ -95,13 +95,26 @@ def rot_dyn(Gamma, p, q, r, L, M, N, Iy):
 			Gamma[7]*p*q - Gamma[1]*q*r + Gamma[4]*L + Gamma[8]*N]
 	return x_dot
 
+def normalize_quaterions(e):
+	import numpy
+	from numpy.linalg import norm
+	[e0, e1, e2, e3] = numpy.array(e)/norm(numpy.array(e))
+	return [round(e0,3), round(e1,3), round(e2,3), round(e3,3)]
+
+
 def derivatives(state, t, MAV):
 	#state:	[p_n, p_e, p_d, u, v, w, e0, e1, e2, e3, p, q, r]
 	#FM:	[Fx, Fy, Fz, Ell, M, N]
 	#MAV:	MAV.inert, MAV.m, MAV.gravity_needed
 
-	from math import sin, cos
+	state[6:10] = normalize_quaterions(state[6:10])
 
+	MAV.state0 = state
+
+	from math import sin, cos
+	print()
+	print('Time: ' + str(t))
+	print('State: ' + str(state))
 	#Unpack state, FM, MAV
 	[p_n, p_e, p_d, u, v, w, e0, e1, e2, e3, p, q, r] = state
 	storage = MAV.update_FM(t)
@@ -127,7 +140,7 @@ def derivatives(state, t, MAV):
 
 	return xdot
 
-def integrator(MAV, tf = 1, delta_t = 0.1, graphing = False):
+def integrator(MAV, tf = 1, delta_t = 0.05, graphing = False):
 	from numpy import linspace
 	from scipy.integrate import odeint
 
@@ -135,6 +148,7 @@ def integrator(MAV, tf = 1, delta_t = 0.1, graphing = False):
 	descrete_pts = (tf/delta_t) // 1  # force integer
 	t = linspace(0, tf, descrete_pts + 1)
 
+	MAV.delta_t = delta_t
 	#Integration Step
 	outputs = odeint(derivatives, MAV.state0, t, args = (MAV,))
 
