@@ -89,120 +89,72 @@ class MAV:
         CL = (1-sig)*(coeff[0]+coeff[1]*alpha) + sig*2*sign(alpha)*(sin(alpha)**2)*cos(alpha)
         return CL
 
+    def CD(self,alpha, cd0, coeff, AR):
+        #Assume Oswald = 0.8
+        from math import pi
+        return cd0 + (coeff[0] + coeff[1]*alpha)**2/(pi*0.8*AR)
+
     def aero_terms(self):
-        from integrator import EP2Euler321
-        from math import atan
+        from math import atan, sin, cos
         from numpy import matmul, transpose
 
-        [u, v, w] = self.state0[3:6]
+        [p_n, p_e, p_d, u, v, w, e0, e1, e2, e3, p, q, r] = self.state0
         V_t = (u**2 + v**2 + w**2)**(1/2)  #NOTE: No wind included
         Q = 0.5 * V_t**2 *self.density()
 
-        print("Q: " + str(Q))
+        #print("Q: " + str(Q))
 
-        alpha = atan(-w/u)  #NOTE: Negative sign since Pd is inverted
+        alpha = atan(w/u)  #NOTE: Negative sign since Pd is inverted
         beta = atan(v/u)
         angles = [alpha, beta]
-        print('Angles: ' + str(angles))
-        #Determine if stall model needed
-        wing_stall = self.wing[5][0]
-        h_stall = self.hstab[5][0]
-        v_stall = self.vstab[5][0]
 
-        #Forces are [-D S -L] in wind frame
-        coeff = self.wing[6]
-        if wing_stall:
-            wing_w = [-Q*self.wing[0]*self.wing[1]*(coeff[4] + coeff[5]*alpha + coeff[6]*self.wing[1]/(2*V_t)*self.state0[11]),
-                    0,
-                    -Q*self.wing[0]*self.wing[1]*(self.CL_stall(alpha, self.wing[5], coeff[0:2]) + coeff[2]*self.wing[1]/(2*V_t)*self.state0[11])]
-        else:
-            wing_w = [-Q*self.wing[0]*self.wing[1]*(coeff[4] + coeff[5]*alpha + coeff[6]*self.wing[1]/(2*V_t)*self.state0[11]),
-                    0,
-                    -Q*self.wing[0]*self.wing[1]*(coeff[0] + coeff[1]*alpha + coeff[2]*self.wing[1]/(2*V_t)*self.state0[11])]
-        print('Wing: ' + str(wing_w))
+        w_coeff = self.wing[6]
+        h_coeff = self.hstab[6]
+        v_coeff = self.vstab[6]
 
-        coeff = self.hstab[6]
-        if h_stall:
-            hstab_w = [-Q*self.hstab[0]*self.hstab[1]*(coeff[4] + coeff[5]*alpha + coeff[7]*self.controls[0]),
-                        0,
-                        -Q*self.hstab[0]*self.hstab[1]*(self.CL_stall(alpha, self.hstab[5], coeff[0:2]) + coeff[3]*self.controls[0])]
-        else:
-            hstab_w = [-Q*self.hstab[0]*self.hstab[1]*(coeff[4] + coeff[5]*alpha + coeff[7]*self.controls[0]),
-                        0,
-                        -Q*self.hstab[0]*self.hstab[1]*(coeff[0] + coeff[1]*alpha + coeff[3]*self.controls[0])]
-        print('hstab: ' + str(hstab_w))
+        #Rotated coefficients
+        Cx = -self.CD(alpha, w_coeff[4], w_coeff[0:2], self.wing[0]/self.wing[1])*cos(alpha) + self.CL_stall(alpha, self.wing[5], w_coeff[0:2])*sin(alpha)
+        Cxq = -w_coeff[6]*cos(alpha) + w_coeff[2]*sin(alpha)
+        Cxdele = -h_coeff[7]*cos(alpha) + h_coeff[3]*sin(alpha)
+        Cz = -self.CD(alpha, w_coeff[4], w_coeff[0:2], self.wing[0]/self.wing[1])*sin(alpha) - self.CL_stall(alpha, self.wing[5], w_coeff[0:2])*cos(alpha)
+        Czq = -w_coeff[6]*sin(alpha) - w_coeff[2]*cos(alpha)
+        Czdele = -h_coeff[7]*sin(alpha) - h_coeff[3]*cos(alpha)
 
-        coeff = self.vstab[6]
-        if v_stall:
-            vstab_w = [-Q*self.vstab[0]*self.vstab[1]*(coeff[5] * beta + coeff[9]*self.controls[3]),
-                        Q*self.vstab[0]*self.vstab[1]*(self.CL_stall(beta, self.vstab[5], coeff[0:2]) + coeff[3]*self.controls[3]),
-                        0]
-        else:
-            vstab_w = [-Q*self.vstab[0]*self.vstab[1]*(coeff[4] + coeff[5]*beta + coeff[7]*self.controls[3]),
-                        Q*self.vstab[0]*self.vstab[1]*(coeff[0] + coeff[1]*beta + coeff[3]*self.controls[3]),
-                        0]
-        print('vstab: ' + str(vstab_w))
+        #NEEDS REVISION
+        #FORCES
+        X = Q*self.wing[0]*self.wing[1]*(Cx + Cxq*self.wing[1]/(2*V_t)*q + Cxdele*self.controls[0])
+        Y = Q*self.wing[0]*self.wing[1]*(v_coeff[3]*self.controls[3])
+        Z = Q*self.wing[0]*self.wing[1]*(Cz + Czq*self.wing[1]/(2*V_t)*q + Czdele*self.controls[0])
 
-        #Forces in BODY frame
-        XYZ_w = list(map(sum, zip( list(map(sum, zip(wing_w, hstab_w))) , vstab_w)))
-        print('Total Forces: ' + str(XYZ_w))
-        [X, Y, Z] = w2b(angles, XYZ_w)
-        print('Rotated Forces: ' + str([X, Y, Z]))
-        #Condense moment inputs
-        #ROLL
-        w_roll_w = [-Q*self.wing[0]*self.wing[1]*self.wing[3]*self.wing[6][7]*2*self.controls[2],
-                        0,
-                        -Q*self.wing[0]*self.wing[1]*self.wing[3]*self.wing[6][3]*2*self.controls[2]]
-        w_roll_b = matmul([0, 0, self.wing[3]], w2b(angles, w_roll_w))
-        #w_roll_b +=  Q*self.wing[0]*(self.wing[1]**2)*self.wing[6][8][0]*self.controls[2] #Roll moment of aileron
-        v_roll_b = matmul([0, self.vstab[4], 0], w2b(angles, vstab_w))
-        #v_roll_b +=  Q*self.vstab[0]*(self.vstab[1]**2)*self.vstab[6][8][0]*self.controls[3] #Roll moment of rudder
-        L = w_roll_b+v_roll_b
+        #MOMENTS
+        L = Q*self.wing[0]**2*self.wing[1]*(w_coeff[8][0]*self.controls[2] + v_coeff[8][0]*self.controls[3])
+        M = Q*self.wing[0]*self.wing[1]**2*(w_coeff[8][3] + w_coeff[8][4]*alpha + w_coeff[8][5]*self.wing[1]/(2*V_t)*q + h_coeff[8][1]*self.controls[0])
+        N = Q*self.wing[0]**2*self.wing[1]*(w_coeff[8][2]*self.controls[2])
 
-        #PITCH
-        h_pitch_b = matmul([0, 0, self.hstab[2]], w2b(angles, hstab_w))
-        #h_roll_b +=  Q*self.hstab[0]*(self.hstab[1]**2)*self.hstab[6][8][1]*self.controls[0] #Pitch moment of elevator
-        w_pitch_b = matmul([0, 0, self.wing[2]], w2b(angles, wing_w))
-        M = h_pitch_b+w_pitch_b
-
-        #YAW
-        v_yaw_b = matmul([0, self.vstab[2], 0], w2b(angles, vstab_w))
-        #w_roll_b =  Q*self.wing[0]*(self.wing[1]**2)*self.wing[6][8][2]*self.controls[2] #Pitch moment of aileron
-        N = v_yaw_b #+w_roll_b
-
-        #DEBUG AREA
-        print('AERO TERMS:' + str([X, Y, Z, L, M, N]))
-        from time import sleep
-        #sleep(1)
-        return [X, Y, Z, L, M, N]
+        #return [X, Y, Z, L, M, N]
+        return [X, Y, Z, 0, 0, 0]
 
     def update_FM(self, t):
         from math import sin, cos
         from integrator import EP2Euler321
 
         #Angularize Gravity
-        angles = EP2Euler321(self.state0[6:10])
-        Fg = f2b(angles, [0, 0, 32.2*self.mass])
-        print('Gravity: ' + str(Fg))
+        [psi, theta, phi] = EP2Euler321(self.state0[6:10])
+        print('Angles:' + str([psi, theta, phi]))
+
         #All Forcing Functions
         for i in range(6):
             try:
                 self.FM[i] = self.FMeq[i](t)
             except:
                 self.FM[i] = self.FMeq[i]
-        print("FM w/Forcing:" + str(self.FM))
-
-        #Add in Gravity
-        self.FM[0] += Fg[0] + self.thrust_max * self.controls[1] #Add in thrust
-        self.FM[1] += Fg[1]
-        self.FM[2] += Fg[2]
-        print("FM w/Gravity:" + str(self.FM))
+        #print("FM w/Forcing:" + str(self.FM))
 
         #Add in Aero Terms
         aero_b = self.aero_terms()
-        self.FM[0] += aero_b[0]
-        self.FM[1] += aero_b[1]
-        self.FM[2] += aero_b[2]
+        self.FM[0] += -32.2*self.mass*sin(theta) + aero_b[0] + self.thrust_max*self.controls[1]
+        self.FM[1] += 32.2*self.mass*cos(theta)*sin(phi) + aero_b[1]
+        self.FM[2] += 32.2*self.mass*cos(phi)*cos(phi) + aero_b[2]
         self.FM[3] += aero_b[3]
         self.FM[4] += aero_b[4]
         self.FM[5] += aero_b[5]
@@ -253,9 +205,9 @@ class MAV:
              #stall: True/False, M, alpha_0
              #coeff: CL0, CLa/b, CLq, CL_del_control, CD0, CDa/b, CDq, CD_del_control, [spare]
         self.wing = [9.413, 0.6791, 0.9843, 0, 0, [True, 50, 0.471],
-                     [0.28, 3.5, 0, 0, 0.015, 0, 0, 0, [0.08, 0, 0.06]]]
+                     [0.28, 3.5, 0, 0, 0.015, 0, 0, 0, [0.08, 0, 0.06, -0.02, -0.38, -3.6]]]
         self.hstab = [2.297, 0.381, 0.8202, 0, 0, [False, 0, 0],
-                     [0.1, 5.79, 0, 0.36, 0.01, 0, 0, 0, [0, -0.5, 0]]]
+                     [0.1, 5.79, 0, -0.36, 0.01, 0, 0, 0, [0, -0.5, 0]]]
         self.vstab = [.9843, 0.381, 0.8202, 0, 0, [False, 0, 0],
                      [0, 5.79, 0, -0.17, 0.01, 0, 0, 0, [0.105, 0, 0]]]
 

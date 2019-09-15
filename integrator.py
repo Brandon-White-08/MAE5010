@@ -33,9 +33,10 @@ def Euler3212EP(angles, radians = False, rounding = True):
 def EP2Euler321(e, rounding = True):
 	import math
 
-	angles = [math.atan2(2 * (e[0]*e[1] + e[2]*e[3]), e[0]**2 + e[3]**2 - e[1]**2 - e[2]**2),
+	#outputs psi, theta, phi
+	angles = [math.atan2(2 * (e[0]*e[3] + e[2]*e[1]), e[0]**2 + e[1]**2 - e[2]**2 - e[3]**2),
 				math.asin(2 * (e[0]*e[2] - e[1]*e[3])),
-				math.atan2(2 * (e[0]*e[3] + e[2]*e[1]), e[0]**2 + e[1]**2 - e[2]**2 - e[3]**2)]
+				math.atan2(2 * (e[0]*e[1] + e[2]*e[3]), e[0]**2 + e[3]**2 - e[1]**2 - e[2]**2)]
 
 	#Convert to degrees
 	for i in range(3):
@@ -63,7 +64,7 @@ def pos_kin(psi, theta, phi, u, v, w):
 	from math import cos, sin
 	from numpy import matmul
 
-	A1 = [[cos(theta)*cos(psi), sin(phi)*sin(theta)*sin(psi) - cos(phi)*cos(psi), cos(phi)*sin(theta)*cos(psi) + sin(phi)*sin(psi)],
+	A1 = [[cos(theta)*cos(psi), sin(phi)*sin(theta)*cos(psi) - cos(phi)*sin(psi), cos(phi)*sin(theta)*cos(psi) + sin(phi)*sin(psi)],
 				[cos(theta)*sin(psi), sin(phi)*sin(theta)*sin(psi) + cos(phi)*cos(psi), cos(phi)*sin(theta)*sin(psi) - sin(phi)*cos(psi)],
 				[-sin(theta), sin(phi)*cos(theta), cos(phi)*cos(theta)]]
 	b1 = [u, v, w]
@@ -145,7 +146,7 @@ def integrator(MAV, tf = 1, delta_t = 0.05, graphing = False):
 	from scipy.integrate import odeint
 
 	#Make the time values
-	descrete_pts = (tf/delta_t) // 1  # force integer
+	descrete_pts = (tf/delta_t) // 1  # force an integer
 	t = linspace(0, tf, descrete_pts + 1)
 
 	MAV.delta_t = delta_t
