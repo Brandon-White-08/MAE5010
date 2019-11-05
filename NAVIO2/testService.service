@@ -1,0 +1,14 @@
+Description=okNavAutopilotService
+
+Wants=network.target
+After=syslog.target network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/nice -n -10 /usr/bin/python /home/pi/Navio2/MyPython/test.py
+Restart=on-failure
+RestartSec=1
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
